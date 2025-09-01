@@ -4,12 +4,6 @@ author: "Anna Maria (G1401231025)"
 date: "2025-09-01"
 output: html_document
 ---
----
-title: "MPDW Prak 1"
-author: "Anna Maria (G1401231025)"
-date: "2025-08-30"
-output: html_document
----
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -19,12 +13,12 @@ library(forecast)
 library(graphics)
 library(TTR)
 library(TSA)
-library (readxl)
 library(ggplot2)
+library(rio)
 ```
 ## Impor Data
 ```{r}
-gold <- read_excel("C:/ANNA/SEMESTER 5/Metode Peramalan Deret Waktu/Praktikum/Gold Price_Anna.xlsx")
+gold <- import("https://raw.githubusercontent.com/mriannaa/MPDW/refs/heads/main/Pertemuan%201/Gold%20Price_Anna.csv")
 gold
 ```
 
@@ -42,12 +36,15 @@ gold.ts <- ts(gold$Price) #Mengubah Data menjadi Data Deret Waktu, agar terbaca 
 ```{r}
 summary(gold.ts) #Menunjukan ringkasan data
 ```
+### Plot Deret Waktu
 ```{r}
 #Untuk melihat Plot Deret Waktu
 ts.plot(gold.ts, xlab="Time Period ", ylab="Reading", 
         main = "Time Series Plot")
 points(gold.ts)
 ```
+#### Grafik plot deret waktu menunjukkan adanya pola tren, ditandai dengan pergerakan data yang berubah secara bertahap seiring waktu, bukan bersifat acak maupun musiman.
+
 ## Single Moving Average & Double Moving Average
 ### Pembagian Data
 #### Perbandingan data latih sebesar 80% dan data uji 20%
@@ -64,10 +61,12 @@ test_ma.ts <- ts(testing_ma$Price)
 plot(gold.ts, col="red",main="Plot semua data")
 points(gold.ts)
 ```
+
 ```{r}
 plot(train_ma.ts, col="blue",main="Plot data latih")
 points(train_ma.ts)
 ```
+
 ```{r}
 #eksplorasi data uji
 plot(test_ma.ts, col="blue",main="Plot data uji")
@@ -77,13 +76,15 @@ points(test_ma.ts)
 ggplot() + 
   geom_line(data = training_ma, aes(x = Date, y = Price, col = "Data Latih")) +
   geom_line(data = testing_ma, aes(x = Date, y = Price, col = "Data Uji")) +
-  labs(x = "Periode Waktu", y = "Price", color = "Legend") +
+  labs(x = "Date", y = "Price", color = "Legend") +
   scale_colour_manual(name="Keterangan:", breaks = c("Data Latih", "Data Uji"),
                       values = c("blue", "red")) + 
   theme_bw() + theme(legend.position = "bottom",
                      plot.caption = element_text(hjust=0.5, size=12))
 ```
+
 ## Pemulusan Data
+
 ### Double Moving Average (DMA)
 ```{r}
 data.sma<-SMA(train_ma.ts, n=4)
@@ -107,6 +108,7 @@ for (i in t) {
 data.gab2 <- cbind(aktual = c(train_ma.ts,rep(NA,24)), pemulusan1 = c(data.sma,rep(NA,24)),pemulusan2 = c(data.dma, rep(NA,24)),At = c(At, rep(NA,24)), Bt = c(Bt,rep(NA,24)),ramalan = c(data.ramal2, f[-1]))
 data.gab2
 ```
+
 ```{r}
 #Visualisasi Data Hasil Pemulusan DMA
 ts.plot(gold.ts, xlab="Time Period ", ylab="Price", main= "DMA N=4 Data Price")
@@ -115,6 +117,7 @@ lines(data.gab2[,3],col="green",lwd=2)
 lines(data.gab2[,6],col="red",lwd=2)
 legend("topleft",c("data aktual","data pemulusan","data peramalan"), lty=6, col=c("black","green","red"), cex=0.8)
 ```
+
 ### Perhitungan akurasi SSE, MSE, dan MAPE
 ```{r}
 #Menghitung nilai keakuratan data latih
@@ -128,6 +131,7 @@ row.names(akurasi_train.dma)<- c("SSE", "MSE", "MAPE")
 colnames(akurasi_train.dma) <- c("Akurasi m = 4")
 akurasi_train.dma
 ```
+
 #### Nilai MAPE pada data latih menunjukan angka 6% yang masih berada di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data latih masih sangat baik.
 ```{r}
 #Menghitung nilai keakuratan data uji
@@ -141,9 +145,11 @@ row.names(akurasi_test.dma)<- c("SSE", "MSE", "MAPE")
 colnames(akurasi_test.dma) <- c("Akurasi m = 4")
 akurasi_test.dma
 ```
+
 #### Disini, pada perhitungan data uji menunjukan nilai MAPE sebesar 3% yang masih di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data uji masih sangat baik.
 
 ## Single Exponential Smoothing & Double Exponential Smoothing
+
 ### Pembagian Data latih 80% dan Data uji 20%
 ```{r}
 #membagi training dan testing
@@ -281,4 +287,42 @@ ramalandes2<- forecast(des.2, h=20)
 ramalandes2
 ```
 
+```{r}
+#Visualisasi
+plot(data1.ts)
+lines(des.1$fitted[,1], lty=2, col="blue")
+lines(ramalandes1$mean, col="red")
+```
+#### Untuk mendapatkan nilai parameter optimum dari DES, argumen alpha dan beta dapat dibuat NULL seperti berikut.
+
+```{r}
+#Lamda dan gamma optimum
+des.opt<- HoltWinters(train.ts, gamma = FALSE)
+des.opt
+```
+
+```{r}
+plot(des.opt)
+```
+
+```{r}
+#ramalan
+ramalandesopt<- forecast(des.opt, h=20)
+ramalandesopt
+```
+
+```{r}
+accuracy(ramalandesopt,testing$Price)
+```
+#### Pada perhitungan akurasi menunjukan data latih nilai MAPE sebesar 0.56% dan data uji sebesar 0.55% yang masih di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data latih dan data uji sangat baik.
+
+## Perbandingan SES dan DES
+```{r}
+MSEfull <-
+  matrix(c(MSEtesting1,MSEtesting2,MSEtestingopt,MSEtestingdes1,MSEtestingdes2,
+           MSEtestingdesopt),nrow=3,ncol=2)
+row.names(MSEfull)<- c("ske 1", "ske 2", "ske opt")
+colnames(MSEfull) <- c("ses","des")
+MSEfull
+```
 
