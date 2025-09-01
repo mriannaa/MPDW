@@ -1,1 +1,90 @@
+---
+title: "Tugas 1 MPDW"
+author: "Anna Maria (G1401231025)"
+date: "2025-09-01"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(forecast)
+library(graphics)
+library(TTR)
+library(TSA)
+library(ggplot2)
+library(rio)
+```
+
+## Import Data
+```{r}
+gold <- import("https://raw.githubusercontent.com/mriannaa/MPDW/refs/heads/main/Pertemuan%201/Gold%20Price_Anna.csv")
+gold
+```
+
+## Eksplorasi Data
+```{r}
+str(gold) #Untuk melihat struktur data
+dim(gold) #Untuk melihat dimensi data
+```
+
+```{r}
+gold.ts <- ts(gold$Price) #Mengubah Data menjadi Data Deret Waktu, agar terbaca oleh R
+```
+
+```{r}
+summary(gold.ts) #Menunjukan ringkasan data
+```
+
+## Plot Deret Waktu
+```{r}
+#Untuk melihat Plot Deret Waktu
+ts.plot(gold.ts, xlab="Time Period ", ylab="Reading", 
+        main = "Time Series Plot")
+points(gold.ts)
+```
+#### Grafik plot deret waktu menunjukkan adanya pola tren, ditandai dengan pergerakan data yang berubah secara bertahap seiring waktu, bukan bersifat acak maupun musiman.
+
+## Single Moving Average & Double Moving Average
+### Pembagian Data
+#### Perbandingan data latih sebesar 80% dan data uji 20%
+
+```{r}
+#Untuk membagi data latih dan data uji
+training_ma <- gold[1:80,]
+testing_ma <- gold[81:100,]
+train_ma.ts <- ts(training_ma$Price)
+test_ma.ts <- ts(testing_ma$Price)
+```
+
+### Eksplorasi Data
+```{r}
+#eksplorasi keseluruhan data
+plot(gold.ts, col="red",main="Plot semua data")
+points(gold.ts)
+```
+
+```{r}
+#eksplorasi data latih
+plot(train_ma.ts, col="blue",main="Plot data latih")
+points(train_ma.ts)
+```
+
+```{r}
+#eksplorasi data uji
+plot(test_ma.ts, col="blue",main="Plot data uji")
+points(test_ma.ts)
+```
+
+```{r}
+ggplot() + 
+  geom_line(data = training_ma, aes(x = Date, y = Price, col = "Data Latih")) +
+  geom_line(data = testing_ma, aes(x = Date, y = Price, col = "Data Uji")) +
+  labs(x = "Periode Waktu", y = "Price", color = "Legend") +
+  scale_colour_manual(name="Keterangan:", breaks = c("Data Latih", "Data Uji"),
+                      values = c("blue", "red")) + 
+  theme_bw() + theme(legend.position = "bottom",
+                     plot.caption = element_text(hjust=0.5, size=12))
+```
 
