@@ -4,6 +4,7 @@ author: "Anna Maria (G1401231025)"
 date: "2025-09-01"
 output: html_document
 ---
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -16,18 +17,20 @@ library(TSA)
 library(ggplot2)
 library(rio)
 ```
+
 ## Impor Data
+
 ```{r}
 gold <- import("https://raw.githubusercontent.com/mriannaa/MPDW/refs/heads/main/Pertemuan%201/Gold%20Price_Anna.csv")
 gold
 ```
 
 ## Eksplorasi Data
+
 ```{r}
 str(gold) #Untuk melihat struktur data
 dim(gold) #Untuk melihat dimensi data
 ```
-
 
 ```{r}
 gold.ts <- ts(gold$Price) #Mengubah Data menjadi Data Deret Waktu, agar terbaca oleh R
@@ -36,18 +39,24 @@ gold.ts <- ts(gold$Price) #Mengubah Data menjadi Data Deret Waktu, agar terbaca 
 ```{r}
 summary(gold.ts) #Menunjukan ringkasan data
 ```
+
 ### Plot Deret Waktu
+
 ```{r}
 #Untuk melihat Plot Deret Waktu
 ts.plot(gold.ts, xlab="Time Period ", ylab="Reading", 
         main = "Time Series Plot")
 points(gold.ts)
 ```
-#### Grafik plot deret waktu menunjukkan adanya pola tren, ditandai dengan pergerakan data yang berubah secara bertahap seiring waktu, bukan bersifat acak maupun musiman.
+
+Grafik plot deret waktu menunjukkan adanya pola tren, ditandai dengan pergerakan data yang berubah secara bertahap seiring waktu, bukan bersifat acak maupun musiman.
 
 ## Single Moving Average & Double Moving Average
+
 ### Pembagian Data
-#### Perbandingan data latih sebesar 80% dan data uji 20%
+
+Perbandingan data latih sebesar 80% dan data uji 20%
+
 ```{r}
 #Untuk membagi data latih dan data uji
 training_ma <- gold[1:80,]
@@ -55,7 +64,9 @@ testing_ma <- gold[81:100,]
 train_ma.ts <- ts(training_ma$Price)
 test_ma.ts <- ts(testing_ma$Price)
 ```
+
 ## Eksplorasi Data Testing dan Data Uji
+
 ```{r}
 #eksplorasi keseluruhan data
 plot(gold.ts, col="red",main="Plot semua data")
@@ -72,12 +83,14 @@ points(train_ma.ts)
 plot(test_ma.ts, col="blue",main="Plot data uji")
 points(test_ma.ts)
 ```
+
 ```{r}
+#Visualisasi dengan Ggplot
 ggplot() + 
   geom_line(data = training_ma, aes(x = Date, y = Price, col = "Data Latih")) +
   geom_line(data = testing_ma, aes(x = Date, y = Price, col = "Data Uji")) +
-  labs(x = "Date", y = "Price", color = "Legend") +
-  scale_colour_manual(name="Keterangan:", breaks = c("Data Latih", "Data Uji"),
+  labs(x = "Periode Waktu", y = "Gold Price", color = "Legend") +
+   scale_colour_manual(name="Keterangan:", breaks = c("Data Latih", "Data Uji"),
                       values = c("blue", "red")) + 
   theme_bw() + theme(legend.position = "bottom",
                      plot.caption = element_text(hjust=0.5, size=12))
@@ -86,6 +99,7 @@ ggplot() +
 ## Pemulusan Data
 
 ### Double Moving Average (DMA)
+
 ```{r}
 data.sma<-SMA(train_ma.ts, n=4)
 data.sma
@@ -119,6 +133,7 @@ legend("topleft",c("data aktual","data pemulusan","data peramalan"), lty=6, col=
 ```
 
 ### Perhitungan akurasi SSE, MSE, dan MAPE
+
 ```{r}
 #Menghitung nilai keakuratan data latih
 error_train.dma = train_ma.ts-data.ramal2[1:length(train_ma.ts)]
@@ -132,7 +147,8 @@ colnames(akurasi_train.dma) <- c("Akurasi m = 4")
 akurasi_train.dma
 ```
 
-#### Nilai MAPE pada data latih menunjukan angka 6% yang masih berada di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data latih masih sangat baik.
+Nilai MAPE pada data latih menunjukan angka 6% yang masih berada di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data latih masih sangat baik.
+
 ```{r}
 #Menghitung nilai keakuratan data uji
 error_test.dma = test_ma.ts-data.gab2[81:100,6] 
@@ -146,11 +162,12 @@ colnames(akurasi_test.dma) <- c("Akurasi m = 4")
 akurasi_test.dma
 ```
 
-#### Disini, pada perhitungan data uji menunjukan nilai MAPE sebesar 3% yang masih di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data uji masih sangat baik.
+Disini, pada perhitungan data uji menunjukan nilai MAPE sebesar 3% yang masih di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data uji masih sangat baik.
 
 ## Single Exponential Smoothing & Double Exponential Smoothing
 
 ### Pembagian Data latih 80% dan Data uji 20%
+
 ```{r}
 #membagi training dan testing
 training<-gold[1:80,]
@@ -160,6 +177,7 @@ test.ts <- ts(testing$Price)
 ```
 
 ### Eksplorasi
+
 ```{r}
 plot(gold.ts, col="black",main="Plot semua data")
 points(gold.ts)
@@ -177,17 +195,16 @@ points(test.ts)
 
 ```{r}
 #Eksplorasi dengan GGPLOT
-library(ggplot2)
 ggplot() + 
-  geom_line(data = training, aes(x = Date, y = Price, col = "Data Latih")) +
-  geom_line(data = testing, aes(x = Date, y = Price, col = "Data Uji")) +
-  labs(x = "Periode Waktu", y = "Membaca", color = "Legend") +
+  geom_line(data = training_ma, aes(x = Date, y = Price, col = "Data Latih")) +
+  geom_line(data = testing_ma, aes(x = Date, y = Price, col = "Data Uji")) +
+  labs(x = "Periode Waktu", y = "Sales", color = "Legend") +
   scale_colour_manual(name="Keterangan:", breaks = c("Data Latih", "Data Uji"),
                       values = c("blue", "red")) + 
   theme_bw() + theme(legend.position = "bottom",
                      plot.caption = element_text(hjust=0.5, size=12))
-```
 
+```
 
 ### SES
 
@@ -200,6 +217,7 @@ plot(ses.1)
 ```{r}
 ses.1
 ```
+
 ```{r}
 ses.2<- ses(train.ts, h = 10, alpha = 0.7)
 plot(ses.2)
@@ -208,13 +226,15 @@ plot(ses.2)
 ```{r}
 ses.2
 ```
-#### Visualisasi hasil pemulusan pada data latih
+
 ```{r}
+#Visualisasi
 autoplot(ses.1) +
   autolayer(fitted(ses.1), series="Fitted") +
   ylab("Membaca") + xlab("Periode")
 ```
-#### Hasil forecasting dengan SES menunjukkan bahwa nilai akan cenderung stabil di sekitar 60.000, dengan ketidakpastian yang meningkat pada periode mendatang.
+
+Hasil forecasting dengan SES menunjukkan bahwa nilai akan cenderung stabil di sekitar 60.000, dengan ketidakpastian yang meningkat pada periode mendatang.
 
 ```{r}
 #Cara 2 (fungsi Holtwinter)
@@ -227,6 +247,7 @@ plot(ses1)
 ramalan1<- forecast(ses1, h=20)
 ramalan1
 ```
+
 ```{r}
 ses2<- HoltWinters(train.ts, gamma = FALSE, beta = FALSE, alpha = 0.7)
 plot(ses2)
@@ -255,14 +276,17 @@ plot(HWopt)
 ramalanopt<- forecast(HWopt, h=20)
 ramalanopt
 ```
-#### Selanjutnya akan dilakukan perhitungan keakuratan hasil peramalan, baik pada data latih dan data uji.
+
+Selanjutnya akan dilakukan perhitungan keakuratan hasil peramalan, baik pada data latih dan data uji.
 
 ```{r}
 accuracy(ramalanopt,testing$Price)
 ```
-#### Pada perhitungan akurasi menunjukan data latih nilai MAPE sebesar 0.55% dan data uji sebesar 0.49% yang masih di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data latih dan data uji sangat baik.
+
+Pada perhitungan akurasi menunjukan data latih nilai MAPE sebesar 0.55% dan data uji sebesar 0.49% yang masih di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data latih dan data uji sangat baik.
 
 ## DES
+
 ```{r}
 #Lamda=0.2 dan gamma=0.2
 des.1<- HoltWinters(train.ts, gamma = FALSE, beta = 0.2, alpha = 0.2)
@@ -289,11 +313,10 @@ ramalandes2
 
 ```{r}
 #Visualisasi
-plot(data1.ts)
+plot(gold.ts)
 lines(des.1$fitted[,1], lty=2, col="blue")
 lines(ramalandes1$mean, col="red")
 ```
-#### Untuk mendapatkan nilai parameter optimum dari DES, argumen alpha dan beta dapat dibuat NULL seperti berikut.
 
 ```{r}
 #Lamda dan gamma optimum
@@ -314,15 +337,9 @@ ramalandesopt
 ```{r}
 accuracy(ramalandesopt,testing$Price)
 ```
-#### Pada perhitungan akurasi menunjukan data latih nilai MAPE sebesar 0.56% dan data uji sebesar 0.55% yang masih di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data latih dan data uji sangat baik.
 
-## Perbandingan SES dan DES
-```{r}
-MSEfull <-
-  matrix(c(MSEtesting1,MSEtesting2,MSEtestingopt,MSEtestingdes1,MSEtestingdes2,
-           MSEtestingdesopt),nrow=3,ncol=2)
-row.names(MSEfull)<- c("ske 1", "ske 2", "ske opt")
-colnames(MSEfull) <- c("ses","des")
-MSEfull
-```
+Pada perhitungan akurasi menunjukan data latih nilai MAPE sebesar 0.56% dan data uji sebesar 0.55% yang masih di bawah 10%. Hal ini menunjukan bahwa nilai akurasi data latih dan data uji sangat baik.
 
+## Kesimpulan
+
+Berdasarkan hasil perhitungan, meskipun nilai peramalan dengan metode SES dan DES menunjukkan selisih yang relatif kecil, namun metode Double Exponential Smoothing (DES) memiliki nilai MAPE yang lebih rendah dibandingkan metode lain, seperti DMA maupun SES. Dengan demikian, DES dapat dianggap sebagai metode terbaik karena memberikan tingkat kesalahan peramalan yang paling kecil
