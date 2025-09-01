@@ -342,4 +342,4 @@ Pada perhitungan akurasi menunjukan data latih nilai MAPE sebesar 0.56% dan data
 
 ## Kesimpulan
 
-Berdasarkan hasil perhitungan, meskipun nilai peramalan dengan metode SES dan DES menunjukkan selisih yang relatif kecil, namun metode Double Exponential Smoothing (DES) memiliki nilai MAPE yang lebih rendah dibandingkan metode lain, seperti DMA maupun SES. Dengan demikian, DES dapat dianggap sebagai metode terbaik karena memberikan tingkat kesalahan peramalan yang paling kecil
+Berdasarkan hasil perhitungan, meskipun nilai peramalan dengan metode SES dan DES menunjukkan selisih yang relatif kecil, namun metode Double Exponential Smoothing (DES) memiliki nilai MAPE yang lebih rendah dibandingkan metode lain, seperti DMA maupun SES. Dengan demikian, DES dapat dianggap sebagai metode terbaik karena memberikan tingkat kesalahan peramalan yang paling kecil.
