@@ -22,7 +22,7 @@ library(rio)
 
 ```{r}
 gold <- import("https://raw.githubusercontent.com/mriannaa/MPDW/refs/heads/main/Pertemuan%201/Gold%20Price_Anna.csv")
-gold
+gold$Date=seq(1:100)
 ```
 
 ## Eksplorasi Data
