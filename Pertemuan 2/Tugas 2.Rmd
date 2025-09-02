@@ -193,4 +193,4 @@ data.frame(
 
 -   Keduanya juga berhasil menghilangkan autokorelasi, yang ditunjukkan oleh statistik D-W yang mendekati 2.
 
--   Model akhir yang seharusnya kita gunakan adalah salah satu dari model yang telah ditangani, karena estimasi koefisien dan uji signifikansinya sekarang jauh lebih dapat dipercaya.
+-   Model akhir yang seharusnya kita gunakan adalah salah satu dari model yang telah ditangani, karena estimasi koefisien dan uji signifikansinya sekarang jauh lebih dapat dipercaya
