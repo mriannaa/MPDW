@@ -1,1 +1,251 @@
+---
+title: "Tugas 3 Prak MPDW " 
+author: "Anna Maria Restho Yulianuti" 
+date: "9 September 2025" 
+output: html_document
+---
 
+## Library
+```{r}
+library(dLagM)
+library(dynlm)
+library(MLmetrics)
+library(lmtest)
+library(car)
+library(corrplot)
+library(ggplot2)
+library(lubridate)
+library (rio)
+library(dplyr)
+```
+
+## Import Data
+```{r}
+dataaqi = import("https://raw.githubusercontent.com/mriannaa/MPDW/refs/heads/main/Pertemuan%203/NewDelhi_Air_quality.csv")
+dataaqi
+```
+
+```{r}
+aqi <- dataaqi %>% select(AQI, pm25)
+aqi
+```
+
+Disini, saya menggunakan variabel AQI sebagai Y dan PM2.5 sebagai X. Saya memilih variabel PM2.5 sebagai variabel X karena menurut laporan dari Organisasi Kesehatan Dunia (WHO), yaitu WHO Global Air Quality Guidelines: Particulate matter (PM2.5 and PM10), ozone, nitrogen dioxide, sulfur dioxide and carbon monoxide (https://www.who.int/publications/i/item/9789240034228), menyebutkan bahwa PM2.5 sebagai polutan udara paling berbahaya dan penyebab utama kematian akibat polusi udara secara global. 
+
+## Pengecekan Asumsi
+```{r}
+model_awal <- lm(AQI ~ pm25, data = aqi)
+summary(model_awal)
+```
+### Autokorelasi Residual
+```{r}
+#Uji Durbin-Watson
+dwtest(model_awal) 
+```
+Berdasarkan hasil uji Durbin-Watson didapatkan hasil p-value < 0.05, sehingga Tolak $H0$ dan menandakan ada autokorelasi residual yang signifikan.
+
+### Normalitas Residual
+```{r}
+# Uji Shapiro-Wilk
+shapiro.test(residuals(model_awal))
+```
+Berdasarkan hasil uji Shapiro-Wilk didapatkan hasil p-value > 0.05, sehingga Terima $H0$ dan menandakan bahwa residual terdistribusi secara normal. 
+
+### Homoskedastisitas
+```{r}
+# Uji Breusch-Pagan
+bptest(model_awal)
+```
+Berdasarkan hasil uji Breusch-Pagan didapatkan hasil p-value > 0.05, sehingga Terima $H0$ dan menandakan bahwa ragam residual homogen.
+
+## Pembagian Data
+```{r}
+# Mengubah datetime sesuai format "YYYY-mm-dd"
+dataaqi$datetime <- as.POSIXct(
+  dataaqi$datetime,
+  format = "%Y-%m-%d:%H",
+  tz = "UTC"
+)
+
+# Plot garis AQI terhadap waktu
+ggplot(dataaqi, aes(x = datetime, y = AQI)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red", size = 1) +
+  labs(title = "Plot AQI terhadap Waktu",
+       x = "Datetime",
+       y = "AQI") +
+  theme_minimal()
+```
+
+## Split Data
+```{r}
+train<-aqi[1:58,]
+test<-aqi[59:72,]
+```
+Saya menggunakan 80% untuk data training dan 20% untuk data testing, karena Rasio 80/20 adalah rasio yang umum dan seimbang dalam analisis time series.
+
+## Data Time Series
+```{r}
+train.ts<-ts(train)
+test.ts<-ts(test)
+data.ts<-ts(data_aqi)
+```
+
+## Model Koyck
+
+### Pemodelan
+```{r}
+model.koyck <- koyckDlm(x = train$pm25, y = train$AQI)
+summary(model.koyck)
+```
+
+```{r}
+AIC(model.koyck)
+```
+
+```{r}
+BIC(model.koyck)
+```
+**Interpretasi Hasil:**
+
+-   Dari `summary`, kita dapatkan model:
+
+    $$ \hat{Y_t}=4.0771-0.5723X_t+0.8897Y_{t-1} $$
+
+    Koefisien $X_t$ (-0.5723) signifikan, artinya nilai \$X\$ saat ini berpengaruh terhadap $Y$.
+
+-   Koefisien $Y_{t−1}$ (0.8897) juga signifikan. Ini adalah **estimasi untuk** $\lambda$. Nilai ini menunjukkan bahwa sekitar 88% dari efek di periode sebelumnya masih "terbawa" ke periode saat ini.
+
+### Peramalan dan Akurasi
+```{r}
+fore.koyck <- forecast(model = model.koyck, x=test$pm25, h=14)
+fore.koyck
+```
+
+```{r}
+# Data test
+mape.koyck <- MAPE(fore.koyck$forecasts, test$AQI)
+mape.koyck #data test
+```
+
+```{r}
+# Akurasi data training
+GoF(model.koyck)
+```
+Pada Model Koyck menunjukan nilai MAPE pada akurasi data training sebesar 2.59% dan pada data testing sebesar 10,5%
+
+## Regression with Distributed Lag
+### Lag Optimum 
+```{r}
+# Menentukan Lag Optimum 
+finiteDLMauto(formula = AQI ~ pm25,
+              data = data.frame(train), q.min = 1, q.max = 10,
+              model.type = "dlm", error.type = "AIC", trace = TRUE)
+```
+Dari hasil penentuan lag di atas, didapatkan bahwa lag yang paling optimum adalah pada lag 10 karena memiliki nilai AIC yang paling kecil, yaitu sebesar 186.2653. Selanjutnya dilakukan pemodelan untuk lag = 10.
+
+```{r}
+# Model dengan Lag Optimum
+model.dlm <- dlm(x = train$pm25,y = train$AQI , q = 10)
+summary(model.dlm)
+```
+Dari hasil tersebut terdapat beberapa peubah yang berpengaruh signifikan terhadap taraf nyata 5% yaitu $x_t$ , $x_{t-7}$ , $x_{t-10}$ . Adapun keseluruhan model yang terbentuk adalah
+
+$$
+\hat{Y_t}=39.894 -15.772X_t+...-4.613X_{t-10}
+$$
+### Peramalan dan Akurasi
+```{r}
+#peramalan dan akurasi
+fore.dlm2 <- forecast(model = model.dlm2, x=test$pm25, h=14)
+
+#akurasi data test
+mape.dlm2<- MAPE(fore.dlm2$forecasts, test$AQI)
+mape.dlm2
+```
+
+```{r}
+#akurasi data training
+GoF(model.dlm2)
+```
+Pada Model Regression with Distributed Lag menunjukan nilai MAPE pada akurasi data training sebesar 0.74% dan pada data testing sebesar 97.5% . Hal ini menunjukan bahwa model tersebut memiliki akurasi yang kurang baik.
+
+## Model Autoregressive
+### Lag Optimum
+```{r}
+#penentuan lag optimum
+model.ardl.opt <- ardlBoundOrders(data = data.frame(aqi), ic = "AIC", 
+                                  formula = AQI ~ pm25 )
+model.ardl.opt
+```
+
+```{r}
+min_p=c()
+for(i in 1:6){
+  min_p[i]=min(model.ardl.opt$Stat.table[[i]])
+}
+q_opt=which(min_p==min(min_p, na.rm = TRUE))
+p_opt=which(model.ardl.opt$Stat.table[[q_opt]] == 
+              min(model.ardl.opt$Stat.table[[q_opt]], na.rm = TRUE))
+data.frame("q_optimum" = q_opt, "p_optimum" = p_opt, 
+           "AIC"=model.ardl.opt$min.Stat) 
+```
+
+```{r}
+model.ardl2 <- ardlDlm(formula = AQI ~ pm25, 
+                         data = train,p = 15, q = 5) 
+summary(model.ardl2)
+```
+
+```{r}
+AIC(model.ardl2)
+```
+Dari tabel di atas, dapat terlihat bahwa nilai AIC terendah didapat ketika p=15 dan q=5, yaitu sebesar 2.66528. Artinya, model autoregressive optimum didapat ketika p=15 dan q=5.
+
+Model secara keseluruhan :
+$$
+\hat{Y_t}=4.5999-8.9338X_t+12.3455X_{t-1}+...+1.5886Y_{t-15}
+$$
+## Peramalan dan Akurasi
+```{r}
+fore.ardl2 <- forecast(model = model.ardl2, x=test$pm25, h=14)
+fore.ardl2
+```
+
+```{r}
+#akurasi data testing
+mape.ardl <- MAPE(fore.ardl2$forecasts, test$AQI)
+mape.ardl
+```
+
+```{r}
+#akurasi data training
+GoF(model.ardl)
+```
+Pada Model Autoregressive menunjukan nilai MAPE pada akurasi data training sebesar 1.18% dan pada data testing sebesar 39.2% . Hal ini menunjukan bahwa model tersebut memiliki akurasi yang kurang baik.
+
+## Perbandingan Model
+```{r}
+akurasi <- matrix(c(mape.koyck, mape.dlm2, mape.ardl))
+row.names(akurasi)<- c("Koyck","DLM","Autoregressive")
+colnames(akurasi) <- c("MAPE")
+akurasi
+```
+Berdasarkan nilai MAPE, model paling optimum didapat pada Model Koyck karena memiliki nilai MAPE yang terkecil. Ini menunjukkan rata-rata kesalahan prediksi model ini adalah sekitar 10.55% dari nilai aktual.
+
+## Plot
+```{r}
+par(mfrow=c(1,1))
+plot(test$pm25, test$AQI, type="b", col="black", ylim=c(15,40))
+points(test$pm25, fore.koyck$forecasts,col="red")
+lines(test$pm25, fore.koyck$forecasts,col="red")
+points(test$pm25, fore.dlm2$forecasts,col="blue")
+lines(test$pm25, fore.dlm2$forecasts,col="blue")
+points(test$pm25, fore.dlm2$forecasts,col="orange")
+lines(test$pm25, fore.dlm2$forecasts,col="orange")
+legend("topleft",c("aktual", "koyck","DLM", "autoregressive"), lty=1, col=c("black","red","blue","orange","green"), cex=0.8)
+```
+
+Berdasarkan plot tersebut, terlihat bahwa plot yang paling mendekati data aktualnya adalah Model koyck, sehingga dapat disimpulkan model terbaik dalam hal ini adalah model regresi koyck.
+
+Berdasarkan hasil analisis time series terhadap Indeks Kualitas Udara (Y) dengan variabel PM2.5 (X), model Koyck terbukti memberikan hasil yang paling mendekati data aktual dibandingkan distributed lag maupun autoregressive. Hal ini menunjukkan bahwa pengaruh PM2.5 terhadap kualitas udara tidak hanya dirasakan pada periode saat ini, tetapi juga masih bertahan pada periode berikutnya dan memudar secara bertahap dengan pola geometris. Dengan demikian, pengendalian PM2.5 perlu dilakukan secara konsisten karena dampaknya terhadap kualitas udara tidak langsung hilang, melainkan perlu waktu lebih untuk menghilang
