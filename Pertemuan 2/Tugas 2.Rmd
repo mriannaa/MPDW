@@ -13,14 +13,17 @@ library(rio) # Untuk Import Data
 library(TTR)
 library(TSA)
 library(ggplot2)
-```  
+```
+
 ## Import Data
+
 ```{r}
 diy <- import("https://raw.githubusercontent.com/mriannaa/MPDW/refs/heads/main/Pertemuan%202/DIY%20IPM.csv")
 diy
 ```
 
 ## Eksplorasi Data
+
 ```{r}
 str(diy) #Untuk melihat struktur data
 dim(diy) #Untuk melihat dimensi data
@@ -33,7 +36,9 @@ diy.ts <- ts(diy$IPM) #Mengubah Data menjadi Data Deret Waktu, agar terbaca oleh
 ```{r}
 summary(diy.ts)
 ```
+
 ### Plot Deret Waktu
+
 ```{r}
 #Untuk melihat Plot Deret Waktu
 ts.plot(diy.ts, xlab="Time Period ", ylab="Reading", 
@@ -48,9 +53,11 @@ points(diy.ts)
 model_awal <- lm(IPM ~ Tahun, data = diy)
 summary(model_awal)
 ```
+
 ## Tahap 3: Diagnosis (Investigasi Sisaan)
 
 ### 3.1. Diagnosis Visual
+
 ```{r}
 # Ambil sisaan dari model
 sisaan_awal <- residuals(model_awal)
@@ -60,6 +67,7 @@ plot(diy$Tahun, sisaan_awal, type="o", pch=20, col="red",
      main="Plot Sisaan vs Waktu", xlab="Tahun", ylab="Sisaan")
 abline(h=0, lty=2) # Garis referensi di y=0
 ```
+
 Plot tersebut menunjukan Pola yang **Tidak Acak** dan memiliki asumsi memiliki autokorelasi.
 
 ### 3.2. Diagnosis Formal (Uji Durbin-Watson)
@@ -73,6 +81,7 @@ Uji Formal dilakukan dengan Uji Durbin-Watson.
 ```{r}
 dwtest(model_awal)
 ```
+
 **Hasil Investigasi:**
 
 -   P-value yang dihasilkan **sangat kecil (0.0035)**, yaitu di bawah tingkat signifikansi 0.05.
@@ -93,6 +102,7 @@ summary(model_co)
 rho <- model_co$rho
 cat("Rho optimum:", rho)
 ```
+
 **Hasil Penanganan (C-O):**
 
 -   Nilai **Durbin-Watson baru** sekarang jauh lebih dekat ke 2, dan p-value-nya (\> 0.05) menunjukkan bahwa **autokorelasi sudah berhasil diatasi**.
@@ -111,6 +121,7 @@ cat("Koefisien manual Cochrane-Orcutt:\n")
 cat("b0:", b0_co_manual, "\n")
 cat("b1:", b1_co_manual, "\n")
 ```
+
 Hasil koefisien manual sudah sangat mirip dengan hasil dari fungsi otomatis, yaitu dengan b0 = -599.4362 dan b1 = 0.3364035
 
 ### Metode 2: Hildreth-Lu
@@ -134,6 +145,7 @@ r <- c(seq(0.1,0.9, by= 0.1))
 tab <- data.frame("rho" = r, "SSE" = sapply(r, function(i){deviance(hildreth.lu.func(i, model_awal))}))
 round(tab, 4)
 ```
+
 Pada hasil di atas terlihat ρ minimum ketika 0.4. Namun, hasil tersebut masih kurang teliti sehingga akan dicari kembali ρ yang lebih optimum dengan ketelitian yang lebih. Jika sebelumnya jarak antar ρ yang dicari adalah 0.1, kali ini jarak antar ρ adalah 0.001 dan dilakukan pada selang 0.3 sampai dengan 0.5.
 
 ```{r}
@@ -165,6 +177,7 @@ cat("y = ", coef(model_hl)[1]/(1-0.411), "+", coef(model_hl)[2],"x", sep = "")
 #Deteksi autokorelasi
 dwtest(model_hl)
 ```
+
 **Hasil Penanganan (H-L):**
 
 -   Plot yang dihasilkan secara visual menunjukkan nilai ρ mana yang memiliki SSE terendah.
