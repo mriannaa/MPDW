@@ -1,11 +1,231 @@
 ---
-title: "Tugas 3 Prak MPDW " 
+title: "Tugas 5 Prak MPDW " 
 author: "Anna Maria Restho Yulianuti" 
 date: "9 September 2025" 
 output: html_document
 ---
 
 ```{r}
-
+library(ggplot2)
+library(tsibble)
+library(tseries)
+library(MASS)
+library(rio)
+library(forecast)
 ```
 
+### Import Data
+```{r}
+gold <- import("https://raw.githubusercontent.com/mriannaa/MPDW/refs/heads/main/Pertemuan%201/Gold%20Price_Anna.csv")
+gold$Date=seq(1:100)
+
+gold.ts <- ts(gold$Price)
+```
+
+### Stasioner dalam Rataan dan Ragam
+```{r}
+# Plot Time Series
+ts.plot(gold.ts, xlab="Time Period ", ylab="Price", 
+        main = "Time Series Plot of Gold")
+points(gold.ts)
+```
+Berdasarkan plot time series tersebut, terlihat bahwa data tidak stasioner dalam rataan, ditandai dengan adanya trend pada data dan tidak stasioner dalam ragam, ditandai dengan adanya perbedaan lebar pita pada plot
+
+### Density Plot
+```{r}
+lattice::densityplot(as.vector(gold.ts))
+```
+Plot deret waktu di atas menunjukkan bahwa data tidak stasioner dalam rataan, ditandai dengan data memiliki dua puncak yang berbeda dan juga tidak stasioner dalam ragam, ditandai dengan lebar pita yang tidak sama. Pada data di sekitar 56000 memiliki sebaran yang lebih lebar dan renggang, sedangkan data di sekitar 60000 terlihat lebih padat dan rapat.
+
+### Plot ACF
+```{r}
+acf(gold.ts, main="ACF Plot of Gold")
+```
+Berdasarkan plot ACF, terlihat bahwa data tersebut menurun secara perlahan (*tails off slowly*) yang menandakan data tidak stasioner dalam rataan.
+
+### Uji ADF
+```{r}
+adf.test(gold.ts)
+```
+$H_0$ : Data tidak stasioner dalam rataan
+
+$H_1$ : Data stasioner dalam rataan
+
+Berdasarkan uji ADF tersebut, didapat *p-value* sebesar 0.7785 > 0.05 dan menandakan bahwa data tidak stasioner dalam rataan. Hal ini sesuai dengan hasil eksplorasi menggunakan plot time series dan plot ACF.
+
+### Plot Box-Cox
+```{r}
+index <- seq(1:100)
+bc <- boxcox(
+  gold.ts ~ index,
+  lambda = seq(-1000, 1000, by = 0.01)
+)
+```
+
+```{r}
+# Nilai lambda optimum (dibulatkan)
+lambda <- bc$x[which.max(bc$y)]
+lambda
+# Selang kepercayaan 95% untuk lambda
+ci_lambda <- bc$x[bc$y > max(bc$y) - 0.5 * qchisq(0.95, 1)]
+
+# Batas bawah dan batas atas
+ci_lower <- min(ci_lambda)
+ci_upper <- max(ci_lambda)
+
+c(Batas_Bawah = ci_lower, Batas_Atas = ci_upper)
+```
+Gambar di atas menunjukkan nilai *rounded value* ($\lambda$) optimum sebesar **9.49** dan pada selang kepercayaan 95% nilai memiliki batas bawah **3.60 ** dan batas atas **15.51**. Selang tersebut tidak memuat nilai satu sehingga dapat dikatakan bahwa data tersebut tidak stasioner dalam ragam.
+
+### Partisi Data
+#### Bagian 1
+```{r}
+# Membagi Data Bagian 1
+gold1 <- gold.ts[1:80] |> ts()
+# Menghitung rata-rata dan ragam
+mean(gold1)
+var(gold1)
+```
+
+##### Plot Time Series
+```{r}
+gold1 |> as_tsibble() |> 
+  ggplot(aes(x = index, y = value)) +
+  geom_line() + theme_bw() +
+  xlab("Time Period") + ylab("Gold Price")
+```
+Berdasarkan plot time series tersebut, terlihat bahwa data cenderung tidak stasioner dalam rataan, ditandain dengan adanya trend pada data, serta tidak stasioner dalam ragam, ditandai dengan lebar pita yang cenderung tidak sama pada plot tersebut.
+
+##### Plot ACF
+```{r}
+acf(gold1, main="ACF Plot of Gold - Bagian 1")
+```
+Berdasarkan plot ACF, terlihat bahwa plot ACF pada data tersebut menurun secara perlahan (tails off slowly) yang menandakan data tidak stasioner dalam rataan
+
+##### Uji ADF
+```{r}
+adf.test(gold1)
+```
+$H_0$ : Data tidak stasioner dalam rataan
+
+$H_1$ : Data stasioner dalam rataan
+
+Berdasarkan uji ADF tersebut, didapat *p-value* sebesar 0.4554 yang lebih besar dari taraf nyata 5% dan menandakan bahwa data tidak stasioner dalam rataan. Hal ini sesuai dengan hasil eksplorasi menggunakan plot time series dan plot ACF
+
+##### Plot Box Cox
+```{r}
+index <- seq(1:80)
+bc <- boxcox(
+  gold1 ~ index,
+  lambda = seq(-1000, 1000, by = 0.01)
+)
+# Nilai lambda optimum (dibulatkan)
+lambda <- bc$x[which.max(bc$y)]
+lambda
+# Selang kepercayaan 95% untuk lambda
+ci_lambda <- bc$x[bc$y > max(bc$y) - 0.5 * qchisq(0.95, 1)]
+
+# Batas bawah dan batas atas
+ci_lower <- min(ci_lambda)
+ci_upper <- max(ci_lambda)
+
+c(Batas_Bawah = ci_lower, Batas_Atas = ci_upper)
+```
+Gambar di atas menunjukkan nilai *rounded value* ($\lambda$) optimum sebesar **11.77** dan pada selang kepercayaan 95% nilai memiliki batas bawah **5.90** dan batas atas **17.51**. Selang tersebut tidak memuat nilai satu sehingga dapat dikatakan bahwa data kopi tidak stasioner dalam ragam.
+
+#### Bagian 2
+```{r}
+# Membagi Data Bagian 2
+gold2 <- gold.ts[81:100] |> ts()
+# Menghitung rata-rata dan ragam
+mean(gold2)
+var(gold2)
+```
+
+##### Plot Time Series
+```{r}
+gold2 |> as_tsibble() |> 
+  ggplot(aes(x = index, y = value)) +
+  geom_line() + theme_bw() +
+  xlab("Time Period") + ylab("Gold Price")
+```
+Berdasarkan plot time series tersebut, terlihat bahwa data cenderung tidak stasioner dalam rataan, ditandain dengan adanya trend pada data, serta tidak stasioner dalam ragam, ditandai dengan lebar pita yang cenderung tidak sama pada plot tersebut.
+
+##### Plot ACF
+```{r}
+acf(gold2, main="ACF Plot of Gold - Bagian 2")
+```
+Berdasarkan plot ACF, terlihat bahwa plot ACF pada data tersebut cenderung *tails off* dan membentuk gelombang sinus.
+
+##### Uji ADF
+```{r}
+adf.test(gold2)
+```
+$H_0$ : Data tidak stasioner dalam rataan
+
+$H_1$ : Data stasioner dalam rataan
+
+Berdasarkan uji ADF tersebut, didapat *p-value* sebesar 0.3189 yang lebih besar dari taraf nyata 5% dan menandakan bahwa data tidak stasioner dalam rataan. Hal ini sesuai dengan hasil eksplorasi menggunakan plot time series, namun berbeda pada plot ACF.
+
+##### Plot Box Cox
+```{r}
+index <- seq(1:20)
+bc <- boxcox(
+  gold2 ~ index,
+  lambda = seq(-1000, 1000, by = 0.01)
+)
+# Nilai lambda optimum (dibulatkan)
+lambda <- bc$x[which.max(bc$y)]
+lambda
+# Selang kepercayaan 95% untuk lambda
+ci_lambda <- bc$x[bc$y > max(bc$y) - 0.5 * qchisq(0.95, 1)]
+# Batas bawah dan batas atas
+ci_lower <- min(ci_lambda)
+ci_upper <- max(ci_lambda)
+
+c(Batas_Bawah = ci_lower, Batas_Atas = ci_upper)
+```
+Gambar di atas menunjukkan nilai *rounded value* ($\lambda$) optimum sebesar **-5.08** dan pada selang kepercayaan 95% nilai memiliki batas bawah **-84.81** dan batas atas **71.09**. Selang tersebut tidak memuat nilai satu sehingga dapat dikatakan bahwa data kopi tidak stasioner dalam ragam.
+
+### Penanganan Kestasioneran
+#### Transformasi Box-Cox
+```{r}
+lambda_opt <- 9.49
+gold_bc <- BoxCox(gold.ts, lambda = lambda_opt)
+
+plot(gold_bc, main = paste("Box-Cox Transform (λ =", round(lambda_opt, 2), ")"),
+     ylab = "Transformed Price", col = "blue")
+
+# Plot Box-Cox setelah transformasi
+index <- seq_along(gold_bc)
+b = boxcox(gold_bc~index, lambda = seq(-1,4,by=1))
+```
+Gambar di atas menunjukkan selang memuat nilai satu sehingga dapat dikatakan bahwa data setelah transformasi stasioner dalam ragam.
+
+#### Diferensiasi Pertama setelah transformasi
+```{r}
+gold_bc_diff1 = diff(gold_bc, differences = 1)
+
+plot(gold_bc_diff1, main = "First Differencing after Box-Cox", 
+     ylab = "Δ Price", col = "darkgreen")
+```
+
+#### Plot ACF dan PACF Setelah Diferensiasi Pertama
+```{r}
+# Cek ACF & ADF setelah differencing
+# Plot ACF
+acf(gold_bc_diff1, main = "ACF setelah First Differencing")
+# Plot PACF
+pacf(gold_bc_diff1, main = "PACF setelah First Differencing")
+```
+Berdasarkan plot ACF dan PACF setelah *first differencing*, autokorelasi belum signifikan pada lag awal dan cepat melemah. Hal ini menunjukkan bahwa data belum menjadi stasioner dalam rataan setelah dilakukan diferensiasi pertama. Namun untuk memastikan hal tersebut, perlu dilakukan uji formal, yaitu uji ADF.
+
+#### Uji ADF
+```{r}
+adf.test(gold_bc_diff1)
+```
+$H_0$ : Data tidak stasioner dalam rataan
+
+$H_1$ : Data stasioner dalam rataan
+
+Berdasarkan uji ADF tersebut, didapat *p-value* sebesar 0.02483 yang lebih kecil dari taraf nyata 5% dan menandakan bahwa data telah stasioner dalam rataan sehingga tidak perlu dilakukan diferensiasi lagi.
