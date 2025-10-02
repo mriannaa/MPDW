@@ -100,7 +100,7 @@ Berdasarkan plot time series tersebut, terlihat bahwa data cenderung tidak stasi
 ```{r}
 acf(gold1, main="ACF Plot of Gold - Bagian 1")
 ```
-Berdasarkan plot ACF, terlihat bahwa plot ACF pada data tersebut menurun secara perlahan (tails off slowly) yang menandakan data tidak stasioner dalam rataan
+Berdasarkan plot ACF, terlihat bahwa plot ACF pada data tersebut menurun secara perlahan (*tails off slowly*) yang menandakan data tidak stasioner dalam rataan
 
 ##### Uji ADF
 ```{r}
